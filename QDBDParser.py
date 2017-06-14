@@ -1,8 +1,8 @@
-import os, sys
-
 # take name of the file produced by https://app.quickdatabasediagrams.com
 # return dictionary with the mapping of the tables to the attributes
 # ignore comments, settings, and connections
+
+
 class QDBDParser:
   def __init__(self,fileName):
     self.tables = {}
@@ -14,7 +14,6 @@ class QDBDParser:
     content = [c for c in content if not c.startswith("#")]
     content = [c.split('#')[0].split(' ')[0].strip() for c in content]
 
-    readTableName = True
     tableName = None
     for c in content:
       if not len(c):

@@ -1,4 +1,5 @@
-import pydicom, os, sys, json
+import pydicom, os, json
+
 
 class DICOMParser:
   def __init__(self,fileName,rulesDictionary,dcmqiPath=None,tempPath=None):
@@ -18,7 +19,6 @@ class DICOMParser:
     return self.tables
 
   def parse(self):
-    self.readTopLevelAttributes("CompositeContext")
     self.readReferences()
 
     modality = self.dcm.Modality
@@ -92,16 +92,16 @@ class DICOMParser:
     return None
 
   def getMeasurementUnitsCodeSequence(self):
-    dataElement = self.dcm.data_element("ReferencedImageRealWorldValueMappingSequence").value[0]
-    dataElement = dataElement.data_element("RealWorldValueMappingSequence").value[0]
-    dataElement = dataElement.data_element("MeasurementUnitsCodeSequence").value
-    return dataElement
+    dataElement = self.getRWMSequence()
+    return dataElement.data_element("MeasurementUnitsCodeSequence").value
 
   def getQuantityDefinitionSequence(self):
+    dataElement = self.getRWMSequence()
+    return dataElement.data_element("QuantityDefinitionSequence").value
+
+  def getRWMSequence(self):
     dataElement = self.dcm.data_element("ReferencedImageRealWorldValueMappingSequence").value[0]
-    dataElement = dataElement.data_element("RealWorldValueMappingSequence").value[0]
-    dataElement = dataElement.data_element("QuantityDefinitionSequence").value
-    return dataElement
+    return dataElement.data_element("RealWorldValueMappingSequence").value[0]
 
   def readRWVUnits_CodeValue(self):
     dataElement = self.getMeasurementUnitsCodeSequence()[0]
@@ -146,13 +146,11 @@ class DICOMParser:
     return dataElement.CodeMeaning
 
   def readRWVRealWorldValueIntercept(self):
-    dataElement = self.dcm.data_element("ReferencedImageRealWorldValueMappingSequence").value[0]
-    dataElement = dataElement.data_element("RealWorldValueMappingSequence").value[0]
+    dataElement = self.getRWMSequence()
     return dataElement.RealWorldValueIntercept
 
   def readRWVRealWorldValueSlope(self):
-    dataElement = self.dcm.data_element("ReferencedImageRealWorldValueMappingSequence").value[0]
-    dataElement = dataElement.data_element("RealWorldValueMappingSequence").value[0]
+    dataElement = self.getRWMSequence()
     return dataElement.RealWorldValueSlope
 
   # this part is not driven at all by the QDBD schema!
@@ -181,7 +179,10 @@ class DICOMParser:
         refClassUID = i.ReferencedSOPClassUID
         refInstanceUID = i.ReferencedSOPInstanceUID
 
-        self.tables["References"].append({"SOPInstanceUID": self.dcm.SOPInstanceUID, "ReferencedSOPClassUID": refClassUID, "ReferencedSOPInstanceUID": refInstanceUID, "SeriesInstanceUID": seriesUID})
+        self.tables["References"].append({"SOPInstanceUID": self.dcm.SOPInstanceUID,
+                                          "ReferencedSOPClassUID": refClassUID,
+                                          "ReferencedSOPInstanceUID": refInstanceUID,
+                                          "SeriesInstanceUID": seriesUID})
 
   def readEvidenceSequence(self, seq):
     for l1item in seq:
@@ -193,7 +194,10 @@ class DICOMParser:
           refClassUID = l3item.ReferencedSOPClassUID
           refInstanceUID = l3item.ReferencedSOPInstanceUID
 
-          self.tables["References"].append({"SOPInstanceUID": self.dcm.SOPInstanceUID, "ReferencedSOPClassUID": refClassUID, "ReferencedSOPInstanceUID": refInstanceUID, "SeriesInstanceUID": seriesUID})
+          self.tables["References"].append({"SOPInstanceUID": self.dcm.SOPInstanceUID,
+                                            "ReferencedSOPClassUID": refClassUID,
+                                            "ReferencedSOPInstanceUID": refInstanceUID,
+                                            "SeriesInstanceUID": seriesUID})
 
   def readSegments(self):
     seq = self.dcm.data_element("SegmentSequence")
@@ -202,7 +206,7 @@ class DICOMParser:
     for segment in seq:
       sAttr = {}
 
-      # Attrubute should be either in a sub-sequence, at the
+      # Attribute should be either in a sub-sequence, at the
       #  top level of the sequence, or at the top level of the dataset
       #  Try all those options
       for attr in self.rulesDictionary["SEG_Segments"]:

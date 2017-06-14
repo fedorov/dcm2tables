@@ -1,7 +1,6 @@
-import os, sys, json, pandas
+import os, sys, pandas
 from QDBDParser import QDBDParser
 from DICOMParser import DICOMParser
-import json
 
 dcmqiPath = '/Users/fedorov/local/builds/dcmqi-refactored/dcmqi-build/bin'
 tempPath = '.'
@@ -30,7 +29,7 @@ def main():
       try:
         dicomParser = DICOMParser(dcmName, tablesRules, tempPath=tempPath, dcmqiPath=dcmqiPath)
       except:
-        "Failed to read as DICOM:",dcmName
+        print "Failed to read as DICOM: %s" % dcmName
         continue
 
       dicomParser.parse()
@@ -50,7 +49,6 @@ def main():
     if len(tables[t]):
       tables[t] = pandas.DataFrame(tables[t])
 
-  for t in tables.keys():
     if type(tables[t]) == pandas.DataFrame:
       tables[t].to_csv(t+".csv",sep='\t',index=False)
 
